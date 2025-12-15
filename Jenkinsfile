@@ -32,7 +32,7 @@ pipeline {
             sh '''
                 mvn sonar:sonar \
                   -Dsonar.projectKey=students-management \
-                  -Dsonar.projectName='Students Management' \
+                  -Dsonar.projectKey=students-management-devops
                   -Dsonar.host.url=http://sonarqube:9000 \
                   -Dsonar.token=${SONAR_TOKEN}
             '''
