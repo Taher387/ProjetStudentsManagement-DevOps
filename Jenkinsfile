@@ -24,21 +24,21 @@ pipeline {
                 sh 'mvn clean package -DskipTests'
             }
         }
-        
         stage('SonarQube Analysis') {
     steps {
         echo '====== Running SonarQube code analysis ======'
         withCredentials([string(credentialsId: 'sonar-token', variable: 'SONAR_TOKEN')]) {
-            sh '''
-                mvn sonar:sonar \
-                  -Dsonar.projectKey=students-management \
-                  -Dsonar.projectKey=students-management-devops
-                  -Dsonar.host.url=http://sonarqube:9000 \
-                  -Dsonar.token=${SONAR_TOKEN}
-            '''
+            sh """
+                mvn org.sonarsource.scanner.maven:sonar-maven-plugin:4.0.0.4121:sonar \
+                -Dsonar.projectKey=students-management-devops \
+                -Dsonar.projectName="Students Management DevOps" \
+                -Dsonar.host.url=http://sonarqube:9000 \
+                -Dsonar.token=$SONAR_TOKEN
+            """
         }
     }
 }
+
         
         stage('Build Docker Image') {
             steps {
