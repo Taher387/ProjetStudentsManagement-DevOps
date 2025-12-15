@@ -1,14 +1,14 @@
 pipeline {
     agent any
-    
+
     environment {
         DOCKER_IMAGE = 'tahersahbi/students-management'
         DOCKER_TAG   = "${BUILD_NUMBER}"
-        SONAR_HOST   = 'http://host.docker.internal:9000'
         KUBECONFIG   = '/var/lib/jenkins/.kube/config'
     }
-    
+
     stages {
+
         stage('Checkout Code') {
             steps {
                 echo '====== Checking out code from GitHub ======'
@@ -17,29 +17,29 @@ pipeline {
                     url: 'https://github.com/Taher387/ProjetStudentsManagement-DevOps.git'
             }
         }
-        
+
         stage('Build with Maven') {
             steps {
                 echo '====== Building application with Maven ======'
                 sh 'mvn clean package -DskipTests'
             }
         }
-        stage('SonarQube Analysis') {
-    steps {
-        echo '====== Running SonarQube code analysis ======'
-        withCredentials([string(credentialsId: 'sonar-token', variable: 'SONAR_TOKEN')]) {
-            sh """
-                mvn org.sonarsource.scanner.maven:sonar-maven-plugin:4.0.0.4121:sonar \
-                -Dsonar.projectKey=students-management-devops \
-                -Dsonar.projectName="Students Management DevOps" \
-                -Dsonar.host.url=http://sonarqube:9000 \
-                -Dsonar.token=$SONAR_TOKEN
-            """
-        }
-    }
-}
 
-        
+        stage('SonarQube Analysis') {
+            steps {
+                echo '====== Running SonarQube code analysis ======'
+                withCredentials([string(credentialsId: 'sonar-token', variable: 'SONAR_TOKEN')]) {
+                    sh """
+                        mvn org.sonarsource.scanner.maven:sonar-maven-plugin:4.0.0.4121:sonar \
+                        -Dsonar.projectKey=students-management-devops \
+                        -Dsonar.projectName="Students Management DevOps" \
+                        -Dsonar.host.url=http://sonarqube:9000 \
+                        -Dsonar.token=$SONAR_TOKEN
+                    """
+                }
+            }
+        }
+
         stage('Build Docker Image') {
             steps {
                 echo '====== Building Docker image ======'
@@ -49,7 +49,7 @@ pipeline {
                 """
             }
         }
-        
+
         stage('Push Docker Image') {
             steps {
                 echo '====== Pushing Docker image to DockerHub ======'
@@ -66,7 +66,7 @@ pipeline {
                 }
             }
         }
-        
+
         stage('Deploy to Kubernetes') {
             steps {
                 echo '====== Deploying to Kubernetes ======'
@@ -78,7 +78,7 @@ pipeline {
                 """
             }
         }
-        
+
         stage('Verify Deployment') {
             steps {
                 echo '====== Verifying deployment ======'
@@ -89,7 +89,7 @@ pipeline {
             }
         }
     }
-    
+
     post {
         success {
             echo '✅ Pipeline completed successfully!'
@@ -104,3 +104,4 @@ pipeline {
         }
     }
 }
+
