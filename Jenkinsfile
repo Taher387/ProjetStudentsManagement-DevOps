@@ -33,7 +33,7 @@ pipeline {
                         mvn org.sonarsource.scanner.maven:sonar-maven-plugin:4.0.0.4121:sonar \
                         -Dsonar.projectKey=students-management-devops \
                         -Dsonar.projectName="Students Management DevOps" \
-                        -Dsonar.host.url=http://sonarqube:9000 \
+                        -Dsonar.host.url=http://172.17.0.1:9000 \
                         -Dsonar.token=$SONAR_TOKEN
                     """
                 }
