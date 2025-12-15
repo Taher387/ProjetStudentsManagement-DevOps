@@ -3,9 +3,9 @@ pipeline {
     
     environment {
         DOCKER_IMAGE = 'tahersahbi/students-management'
-        DOCKER_TAG = "${BUILD_NUMBER}"
-        DOCKER_CREDENTIALS_ID = 'dockerhub-credentials'
-        KUBECONFIG = '/var/lib/jenkins/.kube/config'
+        DOCKER_TAG   = "${BUILD_NUMBER}"
+        SONAR_HOST   = 'http://host.docker.internal:9000'
+        KUBECONFIG   = '/var/lib/jenkins/.kube/config'
     }
     
     stages {
@@ -13,6 +13,7 @@ pipeline {
             steps {
                 echo '====== Checking out code from GitHub ======'
                 git branch: 'main',
+                    credentialsId: 'github-token',
                     url: 'https://github.com/Taher387/ProjetStudentsManagement-DevOps.git'
             }
         }
@@ -26,66 +27,65 @@ pipeline {
         
         stage('SonarQube Analysis') {
             steps {
-                echo '====== Running SonarQube code analysis ======'
-                sh '''
-                    mvn sonar:sonar \
-                      -Dsonar.projectKey=students-management \
-                      -Dsonar.projectName='Students Management' \
-                      -Dsonar.host.url=http://localhost:9000 \
-                      -Dsonar.token=sqa_4bcb0277d4ab1f0cb728e3313633f17c66d7e677
-                '''
+                echo '====== Running SonarQube analysis ======'
+                withCredentials([string(credentialsId: 'sonar-token', variable: 'SONAR_TOKEN')]) {
+                    sh """
+                        mvn sonar:sonar \
+                          -Dsonar.projectKey=students-management \
+                          -Dsonar.projectName="Students Management" \
+                          -Dsonar.host.url=${SONAR_HOST} \
+                          -Dsonar.token=\$SONAR_TOKEN
+                    """
+                }
             }
         }
         
         stage('Build Docker Image') {
             steps {
                 echo '====== Building Docker image ======'
-                script {
-                    dockerImage = docker.build("${DOCKER_IMAGE}:${DOCKER_TAG}")
-                    docker.build("${DOCKER_IMAGE}:latest")
-                }
+                sh """
+                    docker build -t ${DOCKER_IMAGE}:${DOCKER_TAG} .
+                    docker tag ${DOCKER_IMAGE}:${DOCKER_TAG} ${DOCKER_IMAGE}:latest
+                """
             }
         }
         
         stage('Push Docker Image') {
             steps {
                 echo '====== Pushing Docker image to DockerHub ======'
-                script {
-                    docker.withRegistry('https://registry.hub.docker.com', DOCKER_CREDENTIALS_ID) {
-                        dockerImage.push("${DOCKER_TAG}")
-                        dockerImage.push("latest")
-                    }
+                withCredentials([usernamePassword(
+                    credentialsId: 'dockerhub-credentials',
+                    usernameVariable: 'DOCKER_USER',
+                    passwordVariable: 'DOCKER_PASS'
+                )]) {
+                    sh """
+                        echo "\$DOCKER_PASS" | docker login -u "\$DOCKER_USER" --password-stdin
+                        docker push ${DOCKER_IMAGE}:${DOCKER_TAG}
+                        docker push ${DOCKER_IMAGE}:latest
+                    """
                 }
             }
         }
         
         stage('Deploy to Kubernetes') {
             steps {
-                echo '====== Deploying to Kubernetes cluster ======'
-                sh '''
+                echo '====== Deploying to Kubernetes ======'
+                sh """
                     kubectl set image deployment/spring-app \
-                        spring-app=${DOCKER_IMAGE}:${DOCKER_TAG} \
-                        -n devops
-                    
+                      spring-app=${DOCKER_IMAGE}:${DOCKER_TAG} \
+                      -n devops
                     kubectl rollout status deployment/spring-app -n devops
-                    
-                    kubectl get pods -n devops
-                '''
+                """
             }
         }
         
         stage('Verify Deployment') {
             steps {
                 echo '====== Verifying deployment ======'
-                sh '''
-                    echo "Checking pods status..."
+                sh """
                     kubectl get pods -n devops
-                    
-                    echo "Checking service..."
                     kubectl get svc spring-service -n devops
-                    
-                    echo "Deployment successful!"
-                '''
+                """
             }
         }
     }
@@ -93,13 +93,13 @@ pipeline {
     post {
         success {
             echo '✅ Pipeline completed successfully!'
-            echo "🚀 Application deployed with image: ${DOCKER_IMAGE}:${DOCKER_TAG}"
+            echo "🚀 Image deployed: ${DOCKER_IMAGE}:${DOCKER_TAG}"
         }
         failure {
-            echo '❌ Pipeline failed. Check logs for details.'
+            echo '❌ Pipeline failed. Check Jenkins logs.'
         }
         always {
-            echo '🧹 Cleaning up workspace...'
+            echo '🧹 Cleaning workspace...'
             cleanWs()
         }
     }
