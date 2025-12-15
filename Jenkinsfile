@@ -26,19 +26,19 @@ pipeline {
         }
         
         stage('SonarQube Analysis') {
-            steps {
-                echo '====== Running SonarQube analysis ======'
-                withCredentials([string(credentialsId: 'sonar-token', variable: 'SONAR_TOKEN')]) {
-                    sh """
-                        mvn sonar:sonar \
-                          -Dsonar.projectKey=students-management \
-                          -Dsonar.projectName="Students Management" \
-                          -Dsonar.host.url=${SONAR_HOST} \
-                          -Dsonar.token=\$SONAR_TOKEN
-                    """
-                }
-            }
+    steps {
+        echo '====== Running SonarQube code analysis ======'
+        withCredentials([string(credentialsId: 'sonar-token', variable: 'SONAR_TOKEN')]) {
+            sh '''
+                mvn sonar:sonar \
+                  -Dsonar.projectKey=students-management \
+                  -Dsonar.projectName='Students Management' \
+                  -Dsonar.host.url=http://localhost:9000 \
+                  -Dsonar.token=${SONAR_TOKEN}
+            '''
         }
+    }
+}
         
         stage('Build Docker Image') {
             steps {
