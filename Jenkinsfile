@@ -82,15 +82,14 @@ pipeline {
 
 
         stage('Verify Deployment') {
-            steps {
-                echo '====== Verifying deployment ======'
-                sh """
-                    kubectl get pods -n devops
-                    kubectl get svc spring-service -n devops
-                """
-            }
-        }
+    echo '====== Verifying deployment ======'
+    withCredentials([file(credentialsId: 'kubeconfig-credentials', variable: 'KUBECONFIG')]) {
+        sh '''
+          kubectl get pods -n devops
+        '''
     }
+}
+
 
     post {
         success {
