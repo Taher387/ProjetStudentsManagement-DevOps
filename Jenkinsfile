@@ -4,7 +4,6 @@ pipeline {
     environment {
         DOCKER_IMAGE = 'tahersahbi/students-management'
         DOCKER_TAG   = "${BUILD_NUMBER}"
-        KUBECONFIG   = '/var/lib/jenkins/.kube/config'
     }
 
     stages {
@@ -30,11 +29,11 @@ pipeline {
                 echo '====== Running SonarQube code analysis ======'
                 withCredentials([string(credentialsId: 'sonar-token', variable: 'SONAR_TOKEN')]) {
                     sh """
-                        mvn org.sonarsource.scanner.maven:sonar-maven-plugin:4.0.0.4121:sonar \
+                        mvn org.sonarsource.scanner.maven:sonar-maven-plugin:sonar \
                         -Dsonar.projectKey=students-management-devops \
                         -Dsonar.projectName="Students Management DevOps" \
                         -Dsonar.host.url=http://172.17.0.1:9000 \
-                        -Dsonar.token=$SONAR_TOKEN
+                        -Dsonar.token=\$SONAR_TOKEN
                     """
                 }
             }
@@ -68,28 +67,27 @@ pipeline {
         }
 
         stage('Deploy to Kubernetes') {
-    steps {
-        withCredentials([file(credentialsId: 'kubeconfig-credentials', variable: 'KUBECONFIG')]) {
-            sh '''
-              kubectl config current-context
-              kubectl get pods -n devops
-              kubectl set image deployment/spring-app spring-app=tahersahbi/students-management:23 -n devops
-            '''
+            steps {
+                echo '====== Deploying to Kubernetes ======'
+                withCredentials([file(credentialsId: 'kubeconfig-credentials', variable: 'KUBECONFIG')]) {
+                    sh """
+                        kubectl config current-context
+                        kubectl set image deployment/spring-app \
+                        spring-app=${DOCKER_IMAGE}:${DOCKER_TAG} -n devops
+                    """
+                }
+            }
         }
-    }
-}
-
-
 
         stage('Verify Deployment') {
-    echo '====== Verifying deployment ======'
-    withCredentials([file(credentialsId: 'kubeconfig-credentials', variable: 'KUBECONFIG')]) {
-        sh '''
-          kubectl get pods -n devops
-        '''
+            steps {
+                echo '====== Verifying deployment ======'
+                withCredentials([file(credentialsId: 'kubeconfig-credentials', variable: 'KUBECONFIG')]) {
+                    sh 'kubectl get pods -n devops'
+                }
+            }
+        }
     }
-}
-
 
     post {
         success {
