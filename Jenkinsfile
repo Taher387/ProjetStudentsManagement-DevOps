@@ -68,16 +68,15 @@ pipeline {
         }
 
         stage('Deploy to Kubernetes') {
-            steps {
-                echo '====== Deploying to Kubernetes ======'
-                sh """
-                    kubectl set image deployment/spring-app \
-                      spring-app=${DOCKER_IMAGE}:${DOCKER_TAG} \
-                      -n devops
-                    kubectl rollout status deployment/spring-app -n devops
-                """
-            }
-        }
+    steps {
+        sh '''
+        export KUBECONFIG=/var/jenkins_home/.kube/config
+        kubectl config current-context
+        kubectl set image deployment/spring-app spring-app=tahersahbi/students-management:22 -n devops
+        '''
+    }
+}
+
 
         stage('Verify Deployment') {
             steps {
