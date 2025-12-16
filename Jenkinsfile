@@ -69,13 +69,16 @@ pipeline {
 
         stage('Deploy to Kubernetes') {
     steps {
-        sh '''
-        export KUBECONFIG=/var/jenkins_home/.kube/config
-        kubectl config current-context
-        kubectl set image deployment/spring-app spring-app=tahersahbi/students-management:22 -n devops
-        '''
+        withCredentials([file(credentialsId: 'kubeconfig-credentials', variable: 'KUBECONFIG')]) {
+            sh '''
+              kubectl config current-context
+              kubectl get pods -n devops
+              kubectl set image deployment/spring-app spring-app=tahersahbi/students-management:23 -n devops
+            '''
+        }
     }
 }
+
 
 
         stage('Verify Deployment') {
