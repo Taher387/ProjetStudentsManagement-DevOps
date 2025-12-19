@@ -2,7 +2,7 @@ pipeline {
     agent any
 
     environment {
-        DOCKER_IMAGE = 'tahersahbi/students-management'
+        DOCKER_IMAGE = 'oumaymagafsi/students-management'
         DOCKER_TAG   = "${BUILD_NUMBER}"
     }
 
@@ -13,7 +13,7 @@ pipeline {
                 echo '====== Checking out code from GitHub ======'
                 git branch: 'main',
                     credentialsId: 'github-token',
-                    url: 'https://github.com/Taher387/ProjetStudentsManagement-DevOps.git'
+                    url: 'https://github.com/oumaymagafsi/ProjetStudentsManagement-DevOps.git'
             }
         }
 
